@@ -2,7 +2,7 @@ module Array.Extra exposing
     ( all, any, member
     , reverse, intersperse
     , update, pop, removeAt, insertAt
-    , removeWhen, filterMap
+    , removeWhen, filterMap, sequenceJust
     , sliceFrom, sliceUntil, splitAt
     , interweave, apply, map2, map3, map4, map5, zip, zip3, unzip
     , resizelRepeat, resizerRepeat, resizelIndexed, resizerIndexed
@@ -25,7 +25,7 @@ module Array.Extra exposing
 
 ## filter
 
-@docs removeWhen, filterMap
+@docs removeWhen, filterMap, sequenceJust
 
 
 ## part
@@ -181,6 +181,45 @@ filterMap tryMap =
             |> Array.toList
             |> List.filterMap tryMap
             |> Array.fromList
+
+
+{-| Try unpacking all `Just` values.
+If just a single element is `Nothing`, `Nothing` is returned.
+
+[`Maybe.Extra` calls this `combineArray`](https://package.elm-lang.org/packages/elm-community/maybe-extra/latest/Maybe-Extra#combineArray)
+
+    import Array exposing (empty, fromList)
+
+    empty
+        |> sequenceJust
+    --> Just empty
+
+    fromList [ Just 1, Just 2, Just 3 ]
+        |> sequenceJust
+    --> Just (fromList [ 1, 2, 3 ])
+
+    fromList [ Just 1, Nothing, Just 3 ]
+        |> sequenceJust
+    --> Nothing
+
+-}
+sequenceJust : Array (Maybe elementValue) -> Maybe (Array elementValue)
+sequenceJust =
+    \array ->
+        array
+            |> sequenceJustToList
+            |> Maybe.map Array.fromList
+
+
+sequenceJustToList : Array (Maybe elementValue) -> Maybe (List elementValue)
+sequenceJustToList =
+    \array ->
+        array
+            |> Array.foldr
+                (\element soFar ->
+                    Maybe.map2 (::) element soFar
+                )
+                ([] |> Just)
 
 
 {-| Apply a given `Array` of changes to all elements.
